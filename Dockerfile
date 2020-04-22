@@ -1,6 +1,6 @@
 FROM centos:centos7
 
-RUN yum -y upgrade && yum install -y epel-release && yum install -y \
+RUN yum -y upgrade && yum install -y \
   apr-devel \
   apr-util \
   apr-util-devel \
@@ -21,8 +21,6 @@ RUN yum -y upgrade && yum install -y epel-release && yum install -y \
   gpg \
   httpd \
   httpd-devel \
-  jemalloc \
-  jemalloc-devel \
   libffi-devel \
   libtool \
   libyaml \
@@ -33,6 +31,7 @@ RUN yum -y upgrade && yum install -y epel-release && yum install -y \
   make \
   redhat-lsb \
   unzip \
+  wget \
   zlib-devel 
 
 # Import GPG key for RVM
@@ -49,6 +48,21 @@ RUN curl -sSL https://get.rvm.io | bash -s stable
 # RVM's profile in all RUN instructions below.
 # (Requires Docker 1.12)
 SHELL ["/bin/bash", "-l", "-c"] 
+
+# install jemalloc from source.  
+# Note on --disable-initial-exec-tls:  without this, apache crashes on startup with
+#  httpd: Syntax error on line 4 of /etc/httpd/conf/httpd.conf: 
+#  Syntax error on line 1 of /etc/httpd/conf.modules.d/mod_ruby.conf: 
+#  Cannot load /usr/lib64/httpd/modules/mod_ruby.so into server: 
+#  /lib64/libjemalloc.so.2: cannot allocate memory in static TLS block
+RUN cd /tmp \
+  && wget https://github.com/jemalloc/jemalloc/releases/download/5.2.1/jemalloc-5.2.1.tar.bz2 \
+  && tar xvf /tmp/jemalloc-5.2.1.tar.bz2 \
+  && cd /tmp/jemalloc-5.2.1 \
+  && ./configure --prefix=/usr --libdir=/usr/lib64 --disable-initial-exec-tls \
+  && make -j4 \
+  && make install \
+  && rm -Rf /tmp/jemalloc*
 
 # In case we missed any package requirements, this installs them
 RUN rvm requirements
@@ -95,3 +109,4 @@ RUN ln -sf /dev/console /var/log/httpd/access_log \
 # If you want a simpler image without gdb...
 #CMD ["/usr/sbin/httpd", "-D", "FOREGROUND"]
 CMD ["/httpd-gdb"]
+
