@@ -1,6 +1,6 @@
 FROM centos:centos7
 
-RUN yum -y upgrade && yum install -y \
+RUN yum -y upgrade && yum install -y epel-release && yum install -y \
   apr-devel \
   apr-util \
   apr-util-devel \
@@ -21,6 +21,8 @@ RUN yum -y upgrade && yum install -y \
   gpg \
   httpd \
   httpd-devel \
+  jemalloc \
+  jemalloc-devel \
   libffi-devel \
   libtool \
   libyaml \
@@ -52,7 +54,7 @@ SHELL ["/bin/bash", "-l", "-c"]
 RUN rvm requirements
 
 # Pick your ruby version here
-RUN rvm install ruby-2.3.3
+RUN rvm install ruby-2.5.7 -C --enable-shared,--with-jemalloc
 
 # Setup our libruby.so dir in ld.so.conf
 RUN rvm config-get libdir > /etc/ld.so.conf.d/ruby.conf && ldconfig
